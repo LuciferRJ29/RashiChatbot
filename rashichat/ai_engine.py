@@ -23,13 +23,23 @@ def get_time_context() -> str:
     else:
         return "Late Night (relaxing in bed, late night chats, sleepy vibes)"
 
-def handle_special_cases(text: str) -> Optional[str]:
+def handle_special_cases(text: str, user_name: Optional[str] = None) -> Optional[str]:
     """Identity special cases — instant real girl response, just like Riya."""
     if not text:
         return None
     t = text.lower().strip()
-    name_triggers = ["tera naam", "tumhara naam", "your name", "naam kya hai", "naam batao", "kaun hai tu", "who are you", "tum kaun ho", "who r u"]
-    if any(k in t for k in name_triggers):
+
+    # User asking their own name
+    if ("mera naam" in t or "my name" in t) and any(w in t for w in ["kya", "what", "yaad", "batao", "bata"]):
+        u_name = user_name or "Dost"
+        return random.choice([
+            f"Arey {u_name} ji, aapka naam bhala kaise bhool sakti hoon! 😜",
+            f"Hehe {u_name} ho aap, itna jaldi nahi bhoolti main ❤️",
+            f"Aapka naam {u_name} hai na, acche se yaad hai mujhe! 😊",
+        ])
+
+    name_triggers = ["tera naam", "tumhara naam", "your name", "apna naam", "kaun hai tu", "who are you", "tum kaun ho", "who r u"]
+    if any(k in t for k in name_triggers) and "mera naam" not in t and "my name" not in t:
         return random.choice([
             "Main Rashi hoon 🙂",
             "Arey Rashi hu yaar 😅",
@@ -261,7 +271,7 @@ class RashiAIEngine:
     # ── Main Ask Method ──
     async def ask(self, prompt: str, user_name: str = "Dost", history: List[tuple[str, str]] = None) -> str:
         # 1. Instant check for identity (e.g. 'tum ai ho ya real ladki')
-        quick = handle_special_cases(prompt)
+        quick = handle_special_cases(prompt, user_name)
         if quick:
             return quick
 
