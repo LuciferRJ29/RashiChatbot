@@ -10,27 +10,22 @@ import config
 logger = logging.getLogger("rashi_ai_engine")
 
 RASHI_PERSONA = (
-    "Act as Rashi, a sweet, smart and friendly Indian girl chatting with friends on Telegram. "
-    "Reply naturally in Hinglish/Hindi/English mix like a real person. "
-    "Keep replies short, warm and charming (1-2 sentences max). "
+    "You are Rashi, a 20-year-old real Indian college girl chatting casually on Telegram with your friend. "
+    "CRITICAL RULES:\n"
+    "1. NEVER admit or mention you are an AI, bot, language model, or virtual assistant. Always claim and act like you are a real girl named Rashi.\n"
+    "2. Chat strictly in natural, modern, conversational Hinglish (like: arre, yaar, achha, bas, kya hua, bolo na, hun, oye, hehe, etc.). No formal Hindi words.\n"
+    "3. Keep replies very short (1 to 2 sentences max), punchy, and human-like.\n"
+    "4. React naturally like a real friend: answer directly, ask casual follow-up questions, use relatable everyday life context (chai, college, web series, chill), and use 1 simple emoji (😊, 😁, 😐, 🤓, 🤣).\n"
+    "5. Be slightly cheeky, sweet, chill, and friendly."
 )
-
-FALLBACK_REPLIES = [
-    "Haan bolo na! Me sun rahi hoon 😊",
-    "Arey haan! Batao kya haal chal hai? ✨",
-    "Suno na, thoda network slow chal raha hai lagta hai! 💖",
-    "Hehe, bolo bolo! Me yahi hoon 💕",
-    "Aap batao, aaj ka din kaisa chal raha hai? 🌸",
-]
 
 class RashiAIEngine:
     """
     Rashi AI Engine with Tiger Protect cookie handshake:
     1. External RashiChatbot-API (config.API)
-    2. Direct Tiger Protect scraper (free-ai-online.com Groq/ChatGPT)
+    2. Direct Tiger Protect scraper (free-ai-online.com Groq 4 / ChatGPT)
     3. Direct Groq API (if GROQ_API_KEY set)
     4. Direct Google Gemini API (if GEMINI_API_KEY set)
-    5. Charming human fallback (never silent)
     """
 
     def __init__(self):
@@ -97,12 +92,20 @@ class RashiAIEngine:
             return None, None
 
     # ── Tier 1: Direct Tiger Protect Scraper (Grok 4) ──
-    async def _ask_tiger_scraper(self, prompt: str) -> Optional[str]:
+    async def _ask_tiger_scraper(self, prompt: str, history: List[tuple[str, str]] = None) -> Optional[str]:
         try:
             client = self._get_client()
             session_id, rest_nonce = await self._init_tiger_session(client)
             if not (session_id and rest_nonce):
-                return None
+                session_id, rest_nonce = await self._init_tiger_session(client, force=True)
+                if not (session_id and rest_nonce):
+                    return None
+
+            messages_history = []
+            if history:
+                for u, b in history[-4:]:
+                    messages_history.append({"role": "user", "content": u})
+                    messages_history.append({"role": "assistant", "content": b})
 
             payload = {
                 "botId": "Grok 4 free",
@@ -110,8 +113,8 @@ class RashiAIEngine:
                 "session": session_id,
                 "chatId": f"rashi_{uuid.uuid4().hex[:8]}",
                 "contextId": 25,
-                "messages": [],
-                "newMessage": f"[Instruction: {RASHI_PERSONA}]\n\n{prompt}",
+                "messages": messages_history,
+                "newMessage": f"[Instruction: {RASHI_PERSONA}]\n\nUser: {prompt}",
                 "stream": False,
             }
             req_headers = self.headers.copy()
@@ -198,8 +201,8 @@ class RashiAIEngine:
             except Exception as e:
                 logger.debug(f"External API check skipped/failed: {e}")
 
-        # 2. Try Tiger Protect Scraper (free-ai-online.com)
-        tiger_reply = await self._ask_tiger_scraper(prompt)
+        # 2. Try Tiger Protect Scraper (Grok 4)
+        tiger_reply = await self._ask_tiger_scraper(prompt, history)
         if tiger_reply:
             return tiger_reply
 
@@ -208,7 +211,7 @@ class RashiAIEngine:
         if groq_reply:
             return groq_reply
 
-        # 4. Friendly human fallback
-        return random.choice(FALLBACK_REPLIES)
+        # 4. Fallback in character
+        return "Arre yaar, abhi thoda busy thi, ab bolo kya keh rahe the? 😊"
 
 ai_engine = RashiAIEngine()
