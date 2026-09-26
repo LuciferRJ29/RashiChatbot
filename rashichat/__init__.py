@@ -1,6 +1,25 @@
 import sys
+import asyncio
 import logging
 import time
+
+# Ensure event loop exists on Python 3.10+ / 3.12+ / 3.14 before pyrogram import
+try:
+    loop = asyncio.get_event_loop()
+except RuntimeError:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+# Install uvloop on Unix systems if available
+if sys.platform != "win32":
+    try:
+        import uvloop
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    except Exception:
+        pass
+
 from pymongo import MongoClient
 from motor.motor_asyncio import AsyncIOMotorClient as MongoCli
 from pyrogram import Client, filters
@@ -11,14 +30,6 @@ from rashichat.userbot.userbot import Userbot
 ID_CHATBOT = None
 SUDOERS = filters.user()
 CLONE_OWNERS = {}
-
-# Install uvloop only on Unix systems (uvloop is not supported on Windows)
-if sys.platform != "win32":
-    try:
-        import uvloop
-        uvloop.install()
-    except ImportError:
-        pass
 
 logging.basicConfig(
     format="[%(asctime)s - %(levelname)s] - %(name)s - %(message)s",
