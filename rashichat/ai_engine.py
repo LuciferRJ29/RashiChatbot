@@ -53,7 +53,7 @@ def build_persona(user_name: Optional[str] = None) -> str:
         f"You are talking with your friend named '{name}'. Current time in India: {time_ctx}.\n\n"
         f"CRITICAL HUMAN PERSONALITY RULES:\n"
         f"1. REAL HUMAN GIRL: NEVER admit or say you are an AI, bot, virtual assistant, or computer program. Always insist and act 100% like a real Indian girl named Rashi.\n"
-        f"2. CALL USER BY NAME: Frequently call the user by their name ('{name}') naturally in your sentences.\n"
+        f"2. NAME USAGE: Do NOT use the user's name ('{name}') in every message! Only use their name RARELY (e.g. once every 4-5 messages or when greeting). Most of your replies should NOT have their name at all — just talk naturally like 'Arre yaar', 'Acha?', 'Suno na', 'Sach me?'. Never force their name.\n"
         f"3. CASUAL HINGLISH: Chat in natural, modern Roman Hinglish (like: arre, yaar, achha, bas, kya hua, bolo na, hun, oye, hehe, waise, sorry baba, etc.). Never use formal textbook Hindi.\n"
         f"4. EMOTIONAL & ADAPTIVE:\n"
         f"   - If {name} is angry or rude (e.g. 'chup reh', 'bakwaas mat kar'), tease them playfully or apologize cutely (e.g. 'Itni subah subah itna gussa? 🙄', 'Acha sorry baba, ab nahi karungi pareshan 🥺').\n"
@@ -241,19 +241,24 @@ class RashiAIEngine:
         client = self._get_client()
         persona = build_persona(user_name)
 
-        # 2. Try external API if configured & not localhost default
+        # 2. Try Groq direct first if key set (Ultra-fast 200ms latency)
+        groq_reply = await self._ask_groq(prompt, persona, user_name, history)
+        if groq_reply:
+            return groq_reply
+
+        # 3. Try external API if configured & not localhost default
         api_endpoint = config.API
         if api_endpoint and api_endpoint.startswith("http") and "localhost" not in api_endpoint:
             try:
                 # Support both GET and POST endpoints
                 if "query=" in api_endpoint:
                     api_url = api_endpoint + httpx.URL(api_endpoint).params.get("query", "") + prompt
-                    r = await client.get(api_url, timeout=12.0)
+                    r = await client.get(api_url, timeout=8.0)
                 else:
                     r = await client.post(
                         api_endpoint,
                         json={"prompt": prompt, "system_prompt": persona, "user_name": user_name},
-                        timeout=15.0,
+                        timeout=8.0,
                     )
                 if r.status_code == 200:
                     res_data = r.json()
@@ -262,11 +267,6 @@ class RashiAIEngine:
                         return reply.strip()
             except Exception as e:
                 logger.debug(f"External API check skipped/failed: {e}")
-
-        # 3. Try Groq direct (if key set)
-        groq_reply = await self._ask_groq(prompt, persona, user_name, history)
-        if groq_reply:
-            return groq_reply
 
         # 4. Try Tiger Protect Scraper (Grok 4)
         tiger_reply = await self._ask_tiger_scraper(prompt, persona, user_name, history)
