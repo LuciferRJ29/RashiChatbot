@@ -324,34 +324,11 @@ async def chatbot_response(client: Client, message: Message):
                 except Exception as e:
                     LOGGER.error(f"Error with AI response: {e}")
 
-            reply_data = await get_reply(user_input)
-            if reply_data:
-                response_text = reply_data["text"]
-                chat_lang = await get_chat_language(chat_id)
-
-                if not chat_lang or chat_lang == "nolang":
-                    translated_text = response_text
-                else:
-                    translated_text = GoogleTranslator(source="auto", target=chat_lang).translate(response_text)
-                    if not translated_text:
-                        translated_text = response_text
-
-                if reply_data["check"] == "sticker":
-                    await message.reply_sticker(reply_data["text"])
-                elif reply_data["check"] == "photo":
-                    await message.reply_photo(reply_data["text"])
-                elif reply_data["check"] == "video":
-                    await message.reply_video(reply_data["text"])
-                elif reply_data["check"] == "audio":
-                    await message.reply_audio(reply_data["text"])
-                elif reply_data["check"] == "gif":
-                    await message.reply_animation(reply_data["text"])
-                elif reply_data["check"] == "voice":
-                    await message.reply_voice(reply_data["text"])
-                else:
-                    asyncio.create_task(typing_effect(client, message, translated_text))
-            else:
-                await message.reply_text("**I don't understand. What are you saying?**")
+            # Fallback if first AI attempt had an issue
+            fallback_res = await ask_ai(user_input, user_name=user_name)
+            if fallback_res:
+                await message.reply_text(fallback_res)
+                return
 
         if message.reply_to_message:
             await save_reply(message.reply_to_message, message)
@@ -401,59 +378,18 @@ async def chatbot_responsee(client: Client, message: Message):
             else:
                 return await add_served_user(chat_id)
                 
-        if ((message.reply_to_message and message.reply_to_message.from_user.id == client.me.id and not message.text) or (not message.reply_to_message and not message.from_user.is_bot)):
-            reply_data = await get_reply(message.text)
-
-            if reply_data:
-                response_text = reply_data["text"]
-                chat_lang = await get_chat_language(chat_id)
-                
-                if not chat_lang or chat_lang == "nolang":
-                    translated_text = response_text
-                else:
-                    translated_text = GoogleTranslator(source='auto', target=chat_lang).translate(response_text)
-                    if not translated_text:
-                        translated_text = response_text
-                if reply_data["check"] == "sticker":
-                    try:
-                        await message.reply_sticker(reply_data["text"])
-                    except:
-                        pass
-                elif reply_data["check"] == "photo":
-                    try:
-                        await message.reply_photo(reply_data["text"])
-                    except:
-                        pass
-                elif reply_data["check"] == "video":
-                    try:
-                        await message.reply_video(reply_data["text"])
-                    except:
-                        pass
-                elif reply_data["check"] == "audio":
-                    try:
-                        await message.reply_audio(reply_data["text"])
-                    except:
-                        pass
-                elif reply_data["check"] == "gif":
-                    try:
-                        await message.reply_animation(reply_data["text"])
-                    except:
-                        pass
-                elif reply_data["check"] == "voice":
-                    try:
-                        await message.reply_voice(reply_data["text"])
-                    except:
-                        pass
-                else:
-                    try:
-                        await message.reply_text(translated_text)
-                    except:
-                        pass
-            else:
-                try:
-                    await message.reply_text("**I don't understand. What are you saying?**")
-                except:
-                    pass
+        # Only reply if replying to bot or if chatbot status is explicitly enabled
+        should_group_reply = (
+            (message.reply_to_message and message.reply_to_message.from_user.id == client.me.id and message.text) or
+            (chat_status and chat_status.get("status") == "enabled" and message.text and not message.from_user.is_bot)
+        )
+        if should_group_reply:
+            user_name = message.from_user.first_name if message.from_user else "Dost"
+            dynamic_reply = await ask_ai(message.text, user_name=user_name)
+            if dynamic_reply:
+                await client.send_chat_action(chat_id, ChatAction.TYPING)
+                await message.reply_text(dynamic_reply)
+                return
 
         if message.reply_to_message:
             await save_reply(message.reply_to_message, message)

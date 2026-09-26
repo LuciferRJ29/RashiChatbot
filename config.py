@@ -16,5 +16,4 @@ SUPPORT_GRP = getenv("SUPPORT_GRP", "RashiSupport")
 UPDATE_CHNL = getenv("UPDATE_CHNL", "RashiUpdates")
 OWNER_USERNAME = getenv("OWNER_USERNAME", "RashiOwner")
 
-# Backend AI API Endpoint (RashiChatbot-API)
-API = getenv("API", "http://localhost:8000/api/chat?query=")
+API = getenv("API", "https://rashiapi-f0eb86bb5c7b.herokuapp.com")
