@@ -6,15 +6,13 @@ from config import UPDATE_CHNL as MUST_JOIN
 
 @app.on_message(filters.incoming, group=-1)
 async def must_join_channel(app: Client, msg: Message):
-    if not MUST_JOIN:
+    if not MUST_JOIN or MUST_JOIN in ["RashiUpdates", "none", "None", ""]:
         return
     if not msg.from_user:
         return
     try:
         try:
             await app.get_chat_member(MUST_JOIN, msg.from_user.id)
-        except PeerIdInvalid:
-                return
         except UserNotParticipant:
             try:
                 if MUST_JOIN.isalpha():
@@ -36,11 +34,13 @@ async def must_join_channel(app: Client, msg: Message):
                     await msg.stop_propagation()
                 except ChatWriteForbidden:
                     return
-                except Exception as e:
+                except Exception:
                     return
-            except PeerIdInvalid:
+            except Exception:
                 return
-    except PeerIdInvalid:
+        except ChatAdminRequired:
+            return
+        except Exception:
+            return
+    except Exception:
         return
-    except ChatAdminRequired:
-        print(f"๏ᴘʀᴏᴍᴏᴛᴇ ᴍᴇ ᴀs ᴀɴ ᴀᴅᴍɪɴ ɪɴ ᴛʜᴇ ᴍᴜsᴛ_Jᴏɪɴ ᴄʜᴀᴛ ๏: {MUST_JOIN} !")
