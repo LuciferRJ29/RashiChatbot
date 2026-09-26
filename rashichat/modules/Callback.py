@@ -24,6 +24,12 @@ from rashichat.modules.helpers import (
     DEV_OP,
     HELP_BTN,
     HELP_READ,
+    GAME_HELP_TEXT,
+    COMMANDS_HELP_TEXT,
+    PROTECTION_HELP_TEXT,
+    CLONE_HELP_TEXT,
+    SUB_HELP_BACK,
+    CLONE_BACK,
     MUSIC_BACK_BTN,
     SOURCE_READ,
     START,
@@ -52,11 +58,43 @@ def generate_language_buttons(languages):
 async def cb_handler(client: Client, query: CallbackQuery):
     LOGGER.info(query.data)
 
-    # Help menu
+    # Help menu (Game, Commands, Protection Group, Back)
     if query.data == "HELP":
         await query.message.edit_text(
             text=HELP_READ,
             reply_markup=InlineKeyboardMarkup(HELP_BTN),
+            disable_web_page_preview=True,
+        )
+
+    # Game Help Submenu
+    elif query.data == "HELP_GAME":
+        await query.message.edit_text(
+            text=GAME_HELP_TEXT,
+            reply_markup=InlineKeyboardMarkup(SUB_HELP_BACK),
+            disable_web_page_preview=True,
+        )
+
+    # Commands Help Submenu
+    elif query.data == "HELP_COMMANDS":
+        await query.message.edit_text(
+            text=COMMANDS_HELP_TEXT,
+            reply_markup=InlineKeyboardMarkup(SUB_HELP_BACK),
+            disable_web_page_preview=True,
+        )
+
+    # Protection Group Help Submenu
+    elif query.data == "HELP_PROTECTION":
+        await query.message.edit_text(
+            text=PROTECTION_HELP_TEXT,
+            reply_markup=InlineKeyboardMarkup(SUB_HELP_BACK),
+            disable_web_page_preview=True,
+        )
+
+    # Clone Info
+    elif query.data == "CLONE_INFO":
+        await query.message.edit_text(
+            text=CLONE_HELP_TEXT,
+            reply_markup=InlineKeyboardMarkup(CLONE_BACK),
             disable_web_page_preview=True,
         )
 
@@ -67,9 +105,19 @@ async def cb_handler(client: Client, query: CallbackQuery):
 
     # Go back to the main menu
     elif query.data == "BACK":
-        await query.message.edit(
-            text=START,
+        name = query.from_user.first_name if query.from_user else "Dost"
+        await query.message.edit_text(
+            text=START.format(name),
             reply_markup=InlineKeyboardMarkup(DEV_OP),
+            disable_web_page_preview=True,
+        )
+
+    # Back to the help menu
+    elif query.data == "BACK_HELP":
+        await query.message.edit_text(
+            text=HELP_READ,
+            reply_markup=InlineKeyboardMarkup(HELP_BTN),
+            disable_web_page_preview=True,
         )
 
     # Show source information

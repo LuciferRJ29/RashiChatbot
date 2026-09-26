@@ -7,44 +7,23 @@ from rashichat import OWNER, rashichat
 START_BOT = [
     [
         InlineKeyboardButton(
-            text="😍 ᴀᴅᴅ ᴍᴇ ɪɴ ʏᴏᴜʀ ɢʀᴏᴜᴘ 😍",
+            text="➕ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ ➕",
             url=f"https://t.me/{rashichat.username}?startgroup=true",
         ),
     ],
     [
-        InlineKeyboardButton(text="🥀 ᴏᴡɴᴇʀ 🥀", user_id=OWNER),
-        InlineKeyboardButton(text="✨ ꜱᴜᴘᴘᴏʀᴛ ✨", url=f"https://t.me/{SUPPORT_GRP}"),
-    ],
-    [
-        InlineKeyboardButton(text="« ғᴇᴀᴛᴜʀᴇs »", callback_data="HELP"),
+        InlineKeyboardButton(text="❓ ʜᴇʟᴘ", callback_data="HELP"),
+        InlineKeyboardButton(text="🤖 ᴄʟᴏɴᴇ", callback_data="CLONE_INFO"),
     ],
 ]
 
 
-DEV_OP = [
-    [
-        InlineKeyboardButton(text="🥀 ᴏᴡɴᴇʀ 🥀", user_id=OWNER),
-        InlineKeyboardButton(text="✨ ꜱᴜᴘᴘᴏʀᴛ ✨", url=f"https://t.me/{SUPPORT_GRP}"),
-    ],
-    [
-        InlineKeyboardButton(
-            text="✦ ᴀᴅᴅ ᴍᴇ ʙᴀʙʏ ✦",
-            url=f"https://t.me/{rashichat.username}?startgroup=true",
-        ),
-    ],
-    [
-        InlineKeyboardButton(text="« ʜᴇʟᴘ »", callback_data="HELP"),
-    ],
-    [
-        # InlineKeyboardButton(text="❄️ sᴏᴜʀᴄᴇ ❄️", callback_data="SOURCE"),
-        InlineKeyboardButton(text="☁️ ᴀʙᴏᴜᴛ ☁️", callback_data="ABOUT"),
-    ],
-]
+DEV_OP = START_BOT
 
 PNG_BTN = [
     [
         InlineKeyboardButton(
-            text="😍 ᴀᴅᴅ ᴍᴇ ʙᴀʙʏ 😍",
+            text="➕ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ ➕",
             url=f"https://t.me/{rashichat.username}?startgroup=true",
         ),
     ],
@@ -59,18 +38,35 @@ PNG_BTN = [
 
 BACK = [
     [
-        InlineKeyboardButton(text="⦿ ʙᴀᴄᴋ ⦿", callback_data="BACK"),
+        InlineKeyboardButton(text="🔙 ʙᴀᴄᴋ", callback_data="BACK"),
     ],
 ]
 
 
 HELP_BTN = [
     [
-        InlineKeyboardButton(text="🐳 ᴄʜᴀᴛʙᴏᴛ 🐳", callback_data="CHATBOT_CMD"),
-        InlineKeyboardButton(text="🎄 ᴛᴏᴏʟs 🎄", callback_data="TOOLS_DATA"),
+        InlineKeyboardButton(text="🎮 ɢᴀᴍᴇ", callback_data="HELP_GAME"),
     ],
     [
-        InlineKeyboardButton(text="⦿ ᴄʟᴏsᴇ ⦿", callback_data="CLOSE"),
+        InlineKeyboardButton(text="📜 ᴄᴏᴍᴍᴀɴᴅs", callback_data="HELP_COMMANDS"),
+    ],
+    [
+        InlineKeyboardButton(text="🛡️ ᴘʀᴏᴛᴇᴄᴛɪᴏɴ ɢʀᴏᴜᴘ", callback_data="HELP_PROTECTION"),
+    ],
+    [
+        InlineKeyboardButton(text="🔙 ʙᴀᴄᴋ", callback_data="BACK"),
+    ],
+]
+
+SUB_HELP_BACK = [
+    [
+        InlineKeyboardButton(text="🔙 ʙᴀᴄᴋ", callback_data="BACK_HELP"),
+    ],
+]
+
+CLONE_BACK = [
+    [
+        InlineKeyboardButton(text="🔙 ʙᴀᴄᴋ", callback_data="BACK"),
     ],
 ]
 

@@ -112,7 +112,6 @@ async def welcomejej(client, message: Message):
                 try:
                     reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("sᴇʟᴇᴄᴛ ʟᴀɴɢᴜᴀɢᴇ", callback_data="choose_lang")]])    
                     await message.reply_text(text="**тнαикѕ ꜰᴏʀ ᴀᴅᴅɪɴɢ ᴍᴇ ɪɴ ᴛʜɪꜱ ɢʀᴏᴜᴩ.**\n\n**ᴋɪɴᴅʟʏ  ꜱᴇʟᴇᴄᴛ  ʙᴏᴛ  ʟᴀɴɢᴜᴀɢᴇ  ꜰᴏʀ  ᴛʜɪꜱ  ɢʀᴏᴜᴩ  ʙʏ  ᴛʏᴩᴇ  ☞  /lang**", reply_markup=reply_markup)
-                    await message.reply_text(f"**{AUTO_MSG}**")
                 except Exception as e:
                     print(f"{e}")
                     pass
@@ -253,84 +252,44 @@ async def ls(_, m: Message):
 
 @rashichat.on_cmd(["start", "aistart"])
 async def start(_, m: Message):
-    users = len(await get_served_users())
-    chats = len(await get_served_chats())
     if m.chat.type == ChatType.PRIVATE:
-        accha = await m.reply_text(
-            text=random.choice(EMOJIOS),
-        )
-        await asyncio.sleep(0.5)
-        
-     
-        await accha.edit("**__ꨄ︎ ѕ__**")
-        await asyncio.sleep(0.01)
-        await accha.edit("**__ꨄ sт__**")
-        await asyncio.sleep(0.01)
-        await accha.edit("**__ꨄ︎ ѕтα__**")
-        await asyncio.sleep(0.01)
-        await accha.edit("**__ꨄ︎ ѕтαя__**")
-        await asyncio.sleep(0.01)
-        await accha.edit("**__ꨄ sтαят__**")
-        await asyncio.sleep(0.01)
-        await accha.edit("**__ꨄ︎ sтαятι__**")
-        await asyncio.sleep(0.01)
-        await accha.edit("**__ꨄ︎ sтαятιи__**")
-        await asyncio.sleep(0.01)
-        await accha.edit("**__ꨄ sтαятιиg__**")
-        await asyncio.sleep(0.01)
-        await accha.edit("**__ꨄ︎ ѕтαятιиg.__**")
-        await asyncio.sleep(0.1)
-        await accha.edit("**__ꨄ sтαятιиg.....__**")
-        await asyncio.sleep(0.1)
-        await accha.edit("**__ꨄ︎ ѕтαятιиg.__**")
-        await asyncio.sleep(0.1)
-        await accha.edit("**__ꨄ sтαятιиg.....__**")
-        await accha.delete()
-        
-        umm = await m.reply_sticker(sticker=random.choice(STICKER))
-        chat_photo = BOT  
-        if m.chat.photo:
-            try:
-                userss_photo = await rashichat.download_media(m.chat.photo.big_file_id)
-                await umm.delete()
-                if userss_photo:
-                    chat_photo = userss_photo
-            except AttributeError:
-                chat_photo = BOT  
-
-        users = len(await get_served_users())
-        chats = len(await get_served_chats())
-        UP, CPU, RAM, DISK = await bot_sys_stats()
-        await m.reply_photo(photo=chat_photo, caption=START.format(rashichat.mention or "can't mention", users, chats, UP), reply_markup=InlineKeyboardMarkup(START_BOT))
-        await m.reply_text(f"**{AUTO_MSG}**")
         await add_served_user(m.chat.id)
-        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(f"{m.chat.first_name}", user_id=m.chat.id)]])
-        await rashichat.send_photo(int(OWNER_ID), photo=chat_photo, caption=f"{m.from_user.mention} ʜᴀs sᴛᴀʀᴛᴇᴅ ʙᴏᴛ. \n\n**ɴᴀᴍᴇ :** {m.chat.first_name}\n**ᴜsᴇʀɴᴀᴍᴇ :** @{m.chat.username}\n**ɪᴅ :** {m.chat.id}\n\n**ᴛᴏᴛᴀʟ ᴜsᴇʀs :** {users}", reply_markup=keyboard)
-        
-    else:
-        await m.reply_photo(
-            photo=random.choice(IMG),
-            caption=GSTART.format(m.from_user.mention or "can't mention"),
-            reply_markup=InlineKeyboardMarkup(HELP_START),
+        name = m.from_user.first_name if m.from_user else "Dost"
+        await m.reply_text(
+            text=START.format(name),
+            reply_markup=InlineKeyboardMarkup(START_BOT),
+            disable_web_page_preview=True,
         )
-        await m.reply_text(f"**{AUTO_MSG}**")
+    else:
         await add_served_chat(m.chat.id)
+        await m.reply_text(
+            text=f"🌸 **Hey {m.from_user.mention}! Main Rashi hoon** 💕\n\nGroup me mujhse baat karne ke liye text karein ya /rashi use karein!\nHelp aur games ke liye mujhe personal me message karein 👇",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        text="« ʜᴇʟᴘ & ᴍᴇɴᴜ »",
+                        url=f"https://t.me/{rashichat.username}?start=help"
+                    )
+                ]
+            ]),
+            disable_web_page_preview=True,
+        )
 
 
 @rashichat.on_cmd("help")
 async def help(client: rashichat, m: Message):
     if m.chat.type == ChatType.PRIVATE:
-        hmm = await m.reply_photo(
-            photo=random.choice(IMG),
-            caption=HELP_READ,
+        await m.reply_text(
+            text=HELP_READ,
             reply_markup=InlineKeyboardMarkup(HELP_BTN),
+            disable_web_page_preview=True,
         )
-
     else:
-        await m.reply_photo(
-            photo=random.choice(IMG),
-            caption="**ʜᴇʏ, ᴘᴍ ᴍᴇ ғᴏʀ ʜᴇʟᴘ ᴄᴏᴍᴍᴀɴᴅs!**",
-            reply_markup=InlineKeyboardMarkup(HELP_BUTN),
+        await m.reply_text(
+            text="**ʜᴇʏ, ᴘᴍ ᴍᴇ ғᴏʀ ʜᴇʟᴘ ᴄᴏᴍᴍᴀɴᴅs!**",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("« ʜᴇʟᴘ »", url=f"https://t.me/{rashichat.username}?start=help")
+            ]]),
         )
         await add_served_chat(m.chat.id)
 
