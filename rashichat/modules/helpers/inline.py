@@ -88,13 +88,13 @@ CHATBOT_ON = [
 
 MUSIC_BACK_BTN = [
     [
-        InlineKeyboardButton(text="sᴏᴏɴ", callback_data=f"soom"),
+        InlineKeyboardButton(text="🔙 ʙᴀᴄᴋ", callback_data="BACK"),
     ],
 ]
 
 S_BACK = [
     [
-        InlineKeyboardButton(text="⦿ ʙᴀᴄᴋ ⦿", callback_data="SBACK"),
+        InlineKeyboardButton(text="🔙 ʙᴀᴄᴋ", callback_data="BACK"),
         InlineKeyboardButton(text="⦿ ᴄʟᴏsᴇ ⦿", callback_data="CLOSE"),
     ],
 ]

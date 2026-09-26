@@ -88,6 +88,7 @@ async def request_block_word(client: Client, message: Message):
 @Client.on_callback_query(filters.regex(r"^(accept_block|decline_block):"), group=-3)
 async def handle_block_review(client: Client, callback: CallbackQuery):
     try:
+        await callback.answer()
         action, word, chat_id, user_id = callback.data.split(":")
         user_id = int(user_id)
         chat_id = int(chat_id)

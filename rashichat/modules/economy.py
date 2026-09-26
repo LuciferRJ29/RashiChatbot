@@ -114,37 +114,60 @@ async def cmd_give(client, message):
     user_id = message.from_user.id
     args = message.text.split()
     
-    if len(args) < 3:
-        await message.reply_text("Usage: /give <user> <amount>", parse_mode=ParseMode.HTML)
+    amount = None
+    if message.reply_to_message:
+        if len(args) < 2:
+            await message.reply_text("Usage: Reply with <code>/give &lt;amount&gt;</code> or <code>/give &lt;user&gt; &lt;amount&gt;</code>", parse_mode=ParseMode.HTML)
+            return
+        try:
+            amount = int(args[1])
+        except ValueError:
+            await message.reply_text("Invalid amount.", parse_mode=ParseMode.HTML)
+            return
+        target, error = await resolve_target(client, message)
+    else:
+        if len(args) < 3:
+            await message.reply_text("Usage: <code>/give &lt;user&gt; &lt;amount&gt;</code> or reply with <code>/give &lt;amount&gt;</code>", parse_mode=ParseMode.HTML)
+            return
+        target_arg = args[1]
+        try:
+            amount = int(args[2])
+        except ValueError:
+            await message.reply_text("Invalid amount.", parse_mode=ParseMode.HTML)
+            return
+        target, error = await resolve_target(client, message, specific_arg=target_arg)
+
+    if not target:
+        await message.reply_text(error or "Target user not found.", parse_mode=ParseMode.HTML)
         return
-        
-    try:
-        amount = int(args[-1])
-    except ValueError:
-        await message.reply_text("Invalid amount.", parse_mode=ParseMode.HTML)
+
+    target_id = target["user_id"]
+    if target_id == user_id:
+        await message.reply_text("You cannot transfer money to yourself!", parse_mode=ParseMode.HTML)
         return
-        
+
     if amount <= 0:
         await message.reply_text("Amount must be positive.", parse_mode=ParseMode.HTML)
         return
-        
-    target_id = resolve_target(message)
-    if not target_id or target_id == user_id:
-        await message.reply_text("Invalid target.", parse_mode=ParseMode.HTML)
-        return
-        
-    user = ensure_user_exists(user_id, message.from_user.first_name)
+
+    user = ensure_user_exists(message.from_user)
     if user.get("balance", 0) < amount:
         await message.reply_text("Insufficient funds.", parse_mode=ParseMode.HTML)
         return
-        
-    tax_rate = TAX_RATE
-    
+
+    tax_rate = MARRIED_TAX_RATE if user.get("partner_id") == target_id else TAX_RATE
     tax_amt = int(amount * tax_rate)
     receive_amt = amount - tax_amt
-    
+
     users_col.update_one({"user_id": user_id}, {"$inc": {"balance": -amount}})
     users_col.update_one({"user_id": target_id}, {"$inc": {"balance": receive_amt}})
-    users_col.update_one({"user_id": OWNER_ID}, {"$inc": {"balance": tax_amt}}, upsert=True)
-    
-    await message.reply_text(f"Transferred {format_money(receive_amt)} to the target. {format_money(tax_amt)} paid in tax.", parse_mode=ParseMode.HTML)
+    try:
+        users_col.update_one({"user_id": int(OWNER_ID)}, {"$inc": {"balance": tax_amt}}, upsert=True)
+    except Exception:
+        pass
+
+    await message.reply_text(
+        f"✅ Transferred {format_money(receive_amt)} to {get_mention(target)}.\n"
+        f"💸 Tax ({int(tax_rate*100)}%): {format_money(tax_amt)}.",
+        parse_mode=ParseMode.HTML
+    )

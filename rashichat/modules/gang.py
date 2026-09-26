@@ -98,29 +98,33 @@ async def cmd_mission(client, message):
         return
         
     mission = random.choice(MISSIONS)
-    
-    success = random.choice([True, False])
-    reward = random.randint(100, 1000) if success else 0
+    risk = mission.get("risk", 0.3)
+    success = random.random() > risk
+    reward = mission.get("reward", 500) if success else 0
+    xp_gain = mission.get("xp", 30) if success else 5
     
     if success:
         users_col.update_one({"user_id": user_id}, {
             "$inc": {"balance": reward},
             "$set": {"last_mission_time": time.time()}
         })
-        add_xp(user_id, 30)
+        add_xp(user_id, xp_gain)
     else:
         users_col.update_one({"user_id": user_id}, {
             "$set": {"last_mission_time": time.time()}
         })
+        add_xp(user_id, xp_gain)
         
-    prompt = f"Write a short 1 sentence narration about a {mission} mission. Result: {'Success' if success else 'Failed'}."
+    prompt = f"Write a short 1-sentence thrilling narration about a {mission['name']} mission. Result: {'Success' if success else 'Failed'}."
     narration = await ai_engine.ask(prompt)
+    if not narration:
+        narration = "You executed the mission smoothly." if success else "Police intercepted the operation and you barely escaped!"
     
-    msg = f"<b>MISSION!</b>\n\n{narration}\n\n"
+    msg = f"🎯 <b>MISSION: {mission['name']}</b>\n\n<i>{narration}</i>\n\n"
     if success:
-        msg += f"You earned {format_money(reward)}!"
+        msg += f"💰 <b>Reward:</b> {format_money(reward)}\n⭐ <b>XP:</b> +{xp_gain}" 
     else:
-        msg += "You failed the mission."
+        msg += f"❌ <b>Mission Failed!</b> You got away with just +{xp_gain} XP."
         
     await message.reply_text(msg, parse_mode=ParseMode.HTML)
 
