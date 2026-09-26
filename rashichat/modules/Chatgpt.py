@@ -57,8 +57,9 @@ async def rashi_direct_chat(client: Client, message):
     history = conversation_cache[user_id]
     await client.send_chat_action(message.chat.id, ChatAction.TYPING)
 
+    user_name = message.from_user.first_name if message.from_user else "Dost"
     try:
-        result = await ai_engine.ask(user_input, history=history)
+        result = await ai_engine.ask(user_input, user_name=user_name, history=history)
         if result:
             if len(user_input) <= 500 and len(result) <= 500:
                 conversation_cache[user_id].append((user_input, result))

@@ -261,9 +261,9 @@ async def typing_effect(client, message, translated_text):
 
 from rashichat.ai_engine import ai_engine
 
-async def ask_ai(user_text: str, history=None) -> str | None:
+async def ask_ai(user_text: str, user_name: str = "Dost", history=None) -> str | None:
     try:
-        return await ai_engine.ask(user_text, history=history)
+        return await ai_engine.ask(user_text, user_name=user_name, history=history)
     except Exception as e:
         LOGGER.error(f"Error in ask_ai: {e}")
         return None
@@ -315,8 +315,9 @@ async def chatbot_response(client: Client, message: Message):
                     conversation_cache[chat_id] = []
 
                 conversation_history = conversation_cache[chat_id]
+                user_name = message.from_user.first_name if message.from_user else "Dost"
                 try:
-                    result = await ask_ai(user_input, history=conversation_history)
+                    result = await ask_ai(user_input, user_name=user_name, history=conversation_history)
 
                     if result:
                         await client.send_chat_action(message.chat.id, ChatAction.TYPING)
@@ -515,10 +516,15 @@ async def group_chat_response(client: Client, message: Message):
             if user_id not in user_data_cache:
                 user_data_cache[user_id] = {}
 
+            user_name = message.from_user.first_name if message.from_user else "Dost"
             user_input = message.text
+            if message.reply_to_message and message.reply_to_message.text and message.reply_to_message.from_user.id != client.me.id:
+                reply_author = message.reply_to_message.from_user.first_name if message.reply_to_message.from_user else "someone"
+                user_input = f"[Replying to {reply_author}: \"{message.reply_to_message.text[:80]}\"] {message.text}"
+
             conversation_history = conversation_cache[chat_id][user_id]
             try:
-                result = await ask_ai(user_input, history=conversation_history)
+                result = await ask_ai(user_input, user_name=user_name, history=conversation_history)
 
                 if result:
                     await client.send_chat_action(chat_id, ChatAction.TYPING)

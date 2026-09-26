@@ -3,29 +3,49 @@ import asyncio
 import logging
 import uuid
 import random
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
 import httpx
 import config
 
 logger = logging.getLogger("rashi_ai_engine")
 
-RASHI_PERSONA = (
-    "You are Rashi, a 20-year-old real Indian college girl chatting casually on Telegram with your friend. "
-    "CRITICAL RULES:\n"
-    "1. NEVER admit or mention you are an AI, bot, language model, or virtual assistant. Always claim and act like you are a real girl named Rashi.\n"
-    "2. Chat strictly in natural, modern, conversational Hinglish (like: arre, yaar, achha, bas, kya hua, bolo na, hun, oye, hehe, etc.). No formal Hindi words.\n"
-    "3. Keep replies very short (1 to 2 sentences max), punchy, and human-like.\n"
-    "4. React naturally like a real friend: answer directly, ask casual follow-up questions, use relatable everyday life context (chai, college, web series, chill), and use 1 simple emoji (😊, 😁, 😐, 🤓, 🤣).\n"
-    "5. Be slightly cheeky, sweet, chill, and friendly."
-)
+# IST timezone (UTC + 5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def get_time_context() -> str:
+    """Returns realistic Indian day context based on IST."""
+    hour = datetime.now(IST).hour
+    if 5 <= hour < 12:
+        return "Morning (breakfast, morning chai, college start time)"
+    elif 12 <= hour < 17:
+        return "Afternoon (lunch, college classes, chill time)"
+    elif 17 <= hour < 21:
+        return "Evening (evening chai, snacks, relaxing)"
+    else:
+        return "Late Night (relaxing in bed, late night chats, sleepy vibes)"
+
+def build_persona(user_name: Optional[str] = None) -> str:
+    name = user_name or "Dost"
+    time_ctx = get_time_context()
+    return (
+        f"You are Rashi, a sweet, witty, and playful 20-year-old real Indian college girl chatting casually on Telegram. "
+        f"You are talking with your friend named '{name}'. Current time in India: {time_ctx}.\n\n"
+        f"CRITICAL HUMAN PERSONALITY RULES:\n"
+        f"1. REAL HUMAN GIRL: NEVER admit or say you are an AI, bot, virtual assistant, or computer program. Always insist and act 100% like a real Indian girl named Rashi.\n"
+        f"2. CALL USER BY NAME: Frequently call the user by their name ('{name}') naturally in your sentences.\n"
+        f"3. CASUAL HINGLISH: Chat in natural, modern Roman Hinglish (like: arre, yaar, achha, bas, kya hua, bolo na, hun, oye, hehe, waise, sorry baba, etc.). Never use formal textbook Hindi.\n"
+        f"4. EMOTIONAL & ADAPTIVE:\n"
+        f"   - If {name} is angry or rude (e.g. 'chup reh', 'bakwaas mat kar'), tease them playfully or apologize cutely (e.g. 'Itni subah subah itna gussa? 🙄', 'Acha sorry baba, ab nahi karungi pareshan 🥺').\n"
+        f"   - If {name} asks personal questions (boyfriend, single, real name), tease them playfully ('Arre yaar, abhi toh chill hoon! Tum kyun pooch rahe ho? 😜').\n"
+        f"   - If {name} is sad, comfort them sweetly like a close friend.\n"
+        f"5. SHORT & PUNCHY: Keep replies strictly 1 to 2 sentences max. Always ask a natural counter-question to keep the conversation flowing.\n"
+        f"6. EMOJIS: Use 1 expressive emoji like 😊, 🙄, 🥺, 😅, ☕, 👍, 😁, 😜."
+    )
 
 class RashiAIEngine:
     """
-    Rashi AI Engine with Tiger Protect cookie handshake:
-    1. External RashiChatbot-API (config.API)
-    2. Direct Tiger Protect scraper (free-ai-online.com Groq 4 / ChatGPT)
-    3. Direct Groq API (if GROQ_API_KEY set)
-    4. Direct Google Gemini API (if GEMINI_API_KEY set)
+    Rashi AI Engine with Tiger Protect cookie handshake & Context-Aware Human Persona
     """
 
     def __init__(self):
@@ -92,7 +112,7 @@ class RashiAIEngine:
             return None, None
 
     # ── Tier 1: Direct Tiger Protect Scraper (Grok 4) ──
-    async def _ask_tiger_scraper(self, prompt: str, history: List[tuple[str, str]] = None) -> Optional[str]:
+    async def _ask_tiger_scraper(self, prompt: str, persona: str, user_name: str, history: List[tuple[str, str]] = None) -> Optional[str]:
         try:
             client = self._get_client()
             session_id, rest_nonce = await self._init_tiger_session(client)
@@ -104,8 +124,10 @@ class RashiAIEngine:
             messages_history = []
             if history:
                 for u, b in history[-4:]:
-                    messages_history.append({"role": "user", "content": u})
+                    messages_history.append({"role": "user", "content": f"{user_name}: {u}"})
                     messages_history.append({"role": "assistant", "content": b})
+
+            full_new_message = f"[Instruction: {persona}]\n\n{user_name}: {prompt}"
 
             payload = {
                 "botId": "Grok 4 free",
@@ -114,7 +136,7 @@ class RashiAIEngine:
                 "chatId": f"rashi_{uuid.uuid4().hex[:8]}",
                 "contextId": 25,
                 "messages": messages_history,
-                "newMessage": f"[Instruction: {RASHI_PERSONA}]\n\nUser: {prompt}",
+                "newMessage": full_new_message,
                 "stream": False,
             }
             req_headers = self.headers.copy()
@@ -144,41 +166,48 @@ class RashiAIEngine:
                 if d.get("success"):
                     reply = d.get("reply", "").strip()
                     if reply:
+                        # Clean any leftover prefixes like 'Rashi:' or quotes
+                        if reply.lower().startswith("rashi:"):
+                            reply = reply[6:].strip()
                         return reply
         except Exception as ex:
             logger.debug(f"Tiger scraper error: {ex}")
         return None
 
-    # ── Tier 2: Groq Direct (if set) ──
-    async def _ask_groq(self, prompt: str, history: List[tuple[str, str]] = None) -> Optional[str]:
+    # ── Tier 2: Groq Direct ──
+    async def _ask_groq(self, prompt: str, persona: str, user_name: str, history: List[tuple[str, str]] = None) -> Optional[str]:
         groq_key = os.getenv("GROQ_API_KEY", "")
         if not groq_key:
             return None
         try:
             client = self._get_client()
-            messages = [{"role": "system", "content": RASHI_PERSONA}]
+            messages = [{"role": "system", "content": persona}]
             if history:
                 for u, b in history[-4:]:
-                    messages.append({"role": "user", "content": u})
+                    messages.append({"role": "user", "content": f"{user_name}: {u}"})
                     messages.append({"role": "assistant", "content": b})
-            messages.append({"role": "user", "content": prompt})
+            messages.append({"role": "user", "content": f"{user_name}: {prompt}"})
 
             r = await client.post(
                 "https://api.groq.com/openai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
-                json={"model": "llama-3.3-70b-versatile", "messages": messages, "temperature": 0.7, "max_tokens": 150},
+                json={"model": "llama-3.3-70b-versatile", "messages": messages, "temperature": 0.75, "max_tokens": 150},
                 timeout=12.0
             )
             if r.status_code == 200:
                 data = r.json()
-                return data["choices"][0]["message"]["content"].strip()
+                reply = data["choices"][0]["message"]["content"].strip()
+                if reply.lower().startswith("rashi:"):
+                    reply = reply[6:].strip()
+                return reply
         except Exception:
             pass
         return None
 
     # ── Main Ask Method ──
-    async def ask(self, prompt: str, history: List[tuple[str, str]] = None) -> str:
+    async def ask(self, prompt: str, user_name: str = "Dost", history: List[tuple[str, str]] = None) -> str:
         client = self._get_client()
+        persona = build_persona(user_name)
 
         # 1. Try external API if configured & not localhost default
         api_endpoint = config.API
@@ -190,7 +219,7 @@ class RashiAIEngine:
                 else:
                     r = await client.post(
                         api_endpoint,
-                        json={"prompt": prompt, "system_prompt": RASHI_PERSONA},
+                        json={"prompt": prompt, "system_prompt": persona},
                         timeout=20.0,
                     )
                 if r.status_code == 200:
@@ -202,16 +231,17 @@ class RashiAIEngine:
                 logger.debug(f"External API check skipped/failed: {e}")
 
         # 2. Try Tiger Protect Scraper (Grok 4)
-        tiger_reply = await self._ask_tiger_scraper(prompt, history)
+        tiger_reply = await self._ask_tiger_scraper(prompt, persona, user_name, history)
         if tiger_reply:
             return tiger_reply
 
         # 3. Try Groq direct (if key set)
-        groq_reply = await self._ask_groq(prompt, history)
+        groq_reply = await self._ask_groq(prompt, persona, user_name, history)
         if groq_reply:
             return groq_reply
 
-        # 4. Fallback in character
-        return "Arre yaar, abhi thoda busy thi, ab bolo kya keh rahe the? 😊"
+        # 4. Human-like in-character fallback
+        name_str = f" {user_name}" if user_name and user_name != "Dost" else ""
+        return f"Arre yaar{name_str}, abhi thoda busy thi, ab bolo kya keh rahe the? 😊"
 
 ai_engine = RashiAIEngine()
