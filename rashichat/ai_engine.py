@@ -8,15 +8,29 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
 import config
 
+import socket
 try:
+    from curl_cffi import curl
     from curl_cffi.requests import AsyncSession as CurlAsyncSession
     HAS_CURL_CFFI = True
 except ImportError:
     HAS_CURL_CFFI = False
+    curl = None
 
 import httpx
 
 logger = logging.getLogger("rashi_ai_engine")
+
+def get_curl_resolve_opts() -> dict:
+    if not HAS_CURL_CFFI or not curl:
+        return {}
+    host1 = "www.free-ai-online.com"
+    host2 = "free-ai-online.com"
+    try:
+        ip = socket.gethostbyname(host1)
+    except Exception:
+        ip = "109.234.167.117"
+    return {curl.CurlOpt.RESOLVE: [f"{host1}:443:{ip}", f"{host2}:443:{ip}"]}
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
@@ -108,7 +122,7 @@ class RashiAIEngine:
     def _get_cffi_session(self):
         if HAS_CURL_CFFI:
             if self.cffi_session is None:
-                self.cffi_session = CurlAsyncSession(impersonate="chrome124", timeout=20.0)
+                self.cffi_session = CurlAsyncSession(impersonate="chrome124", timeout=20.0, curl_options=get_curl_resolve_opts())
             return self.cffi_session
         return None
 
