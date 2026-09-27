@@ -275,7 +275,7 @@ class RashiAIEngine:
                     "user_name": user_name,
                     "history": formatted_history
                 },
-                timeout=4.0
+                timeout=12.0
             )
             if resp.status_code == 200:
                 data = resp.json()
